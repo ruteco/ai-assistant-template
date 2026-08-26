@@ -1,2 +1,9 @@
 .env
 *.log
+.initialized
+workspace/tools/faster-whisper/models/*
+!workspace/tools/faster-whisper/models/.gitkeep
+workspace/telegram-artifacts/*
+!workspace/telegram-artifacts/.gitkeep
+workspace/shared-files/*
+!workspace/shared-files/.gitkeep

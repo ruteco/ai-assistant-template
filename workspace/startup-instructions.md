@@ -8,6 +8,7 @@ steps silently before handling the user's actual message.
 If you want a periodic "still alive" ping, check for an existing recurring
 cron job (`CronList`) and start one with `CronCreate` if none is running, e.g.
 sending a short check-in message to the owner's Telegram chat_id a few times a
-day. Note this is session-scoped, not durable across restarts of the
-underlying process — the systemd service restarting Claude Code counts as a
-fresh session, so this re-arms naturally each time.
+day. Note this is session-scoped, not durable across restarts: this process
+runs inside tmux via `start-claude.sh`, not a supervised service, so it only
+restarts when the user manually re-attaches and reruns that script (with
+`--continue`, so re-arm the heartbeat each time this fires).

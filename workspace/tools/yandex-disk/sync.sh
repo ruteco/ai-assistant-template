@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Push/pull the local workspace folder to/from Yandex.Disk via its REST API.
+# Push/pull the shared-files folder to/from Yandex.Disk via its REST API.
 # Requires YANDEX_DISK_TOKEN and YANDEX_DISK_REMOTE_PATH in the environment
-# (sourced from .env by the caller). This is trigger-based sync, not a
-# continuous daemon — run it from cron or call it from within a session.
+# (sourced from secrets/.env by the caller). This is trigger-based sync
+# (cron timer or on-demand from a skill), not a continuous daemon.
 #
 # Usage:
-#   yandex_sync.sh push <local_dir>   # upload every file under local_dir
-#   yandex_sync.sh pull <local_dir>   # download everything under the remote path
+#   sync.sh push <local_dir>   # upload every file under local_dir
+#   sync.sh pull <local_dir>   # download everything under the remote path
 
 set -euo pipefail
 
@@ -44,7 +44,6 @@ push() {
 pull() {
   local local_dir="$1"
   mkdir -p "$local_dir"
-  # List files under the remote path and download each.
   curl -s -H "$AUTH_HEADER" \
     "${API}/resources?path=$(python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))" "$REMOTE_ROOT")&limit=1000&fields=_embedded.items.path,_embedded.items.type" \
     | python3 -c "
