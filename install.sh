@@ -3,7 +3,7 @@
 # Ubuntu, supervised by systemd (auto-restart on crash/reboot). Run as root
 # (or with sudo) via SSH:
 #
-#   sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/jokerosky/ai-assistant-template/as-service/install.sh)"
+#   sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/ruteco/ai-assistant-template/as-service/install.sh)"
 #
 # (bash -c "$(curl ...)" — not "curl | bash" — so token prompts below can
 # actually read from your terminal.)
@@ -20,7 +20,7 @@ if [[ $EUID -ne 0 ]]; then
   exit 1
 fi
 
-REPO="jokerosky/ai-assistant-template"
+REPO="ruteco/ai-assistant-template"
 BRANCH="as-service"
 ASSISTANT_USER="${SUDO_USER:-$(whoami)}"
 ASSISTANT_HOME="$(getent passwd "$ASSISTANT_USER" | cut -d: -f6)"

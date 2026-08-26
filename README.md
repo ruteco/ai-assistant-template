@@ -17,7 +17,7 @@ branch.
 SSH into the Ubuntu server as root (or a sudo-capable user), then paste:
 
 ```bash
-sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/jokerosky/ai-assistant-template/as-service/install.sh)"
+sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/ruteco/ai-assistant-template/as-service/install.sh)"
 ```
 
 It installs dependencies, lays out `~/assistant-workspace` for the invoking
