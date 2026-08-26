@@ -1,120 +1,140 @@
-# AI Assistant Template
+# AI Assistant Template (as-service)
 
 Deploys a personal AI CLI assistant (Claude Code) on an Ubuntu server with:
 - Telegram bot as the interface (text + voice messages)
 - Local speech-to-text for voice messages (faster-whisper)
-- Yandex.Disk file sync for a workspace folder
+- Yandex.Disk file sync for a shared-files folder
 - Web search (built into Claude Code)
 - A persistent notes file
 
-## How it works
+This branch runs the assistant as a `systemd` service (`Restart=always`) —
+it survives crashes and reboots, not just SSH disconnects. Want the simpler
+version instead (tmux, no auto-restart, no root required)? See the `main`
+branch.
 
-`claude` runs as a long-lived process on the server (via systemd), listening for
-messages through the official Telegram channel plugin. When you send a voice
-message, it's downloaded, transcribed locally with faster-whisper, and handled
-like a normal chat turn — same flow as this Windows setup, just self-hosted.
+## Install
 
-## Before you run `deploy.sh`
+SSH into the Ubuntu server as root (or a sudo-capable user), then paste:
 
-Three things cannot be scripted end-to-end because they require a one-time
-interactive/browser step. Do these first (or right after the script finishes,
-per the step it pauses on):
+```bash
+sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/jokerosky/ai-assistant-template/as-service/install.sh)"
+```
 
-1. **Claude Code auth token** (blocks everything — do this first)
-   - If you're on a Pro/Max plan: on *any* machine where you're already logged
-     into Claude Code, run `claude setup-token`. It prints a URL, you approve
-     it in a browser, and it gives you a long-lived token
-     (`CLAUDE_CODE_OAUTH_TOKEN`). Paste that into `.env` on the server.
-   - If you have Anthropic Console API billing instead: use `ANTHROPIC_API_KEY`
-     in `.env`. Note this bills per-token, separately from a Pro/Max
-     subscription — check which one you actually want before deploying.
+It installs dependencies, lays out `~/assistant-workspace` for the invoking
+user (or `$SUDO_USER` if you used `sudo`), pre-downloads the faster-whisper
+`small` model, registers the systemd unit, and prompts for two tokens
+(Telegram bot token, Yandex.Disk token) — leave either blank to configure it
+later. It enables the service but does **not** start it — see "After
+install" below.
 
-2. **Telegram bot token** — talk to [@BotFather](https://t.me/BotFather) on
-   Telegram, `/newbot`, copy the token into `.env` as `TELEGRAM_BOT_TOKEN`.
-   This part is fully non-interactive.
+Use `bash -c "$(curl ...)"`, not `curl ... | bash` — piping breaks the token
+prompts, because stdin ends up attached to the curl stream instead of your
+terminal.
 
-3. **Yandex.Disk OAuth token** — go to https://yandex.ru/dev/disk-api/,
-   register an app (or use an existing one) with the `cloud_api:disk.app_folder`
-   or `cloud_api:disk.read`/`cloud_api:disk.write` scopes, then get a token via
-   the OAuth debug flow at https://oauth.yandex.ru/. Put it in `.env` as
-   `YANDEX_DISK_TOKEN`. This is the REST API approach (recommended for a
-   headless server — see "Yandex.Disk: two options" below for the alternative).
+Safe to re-run: if `~/assistant-workspace/.initialized` already exists, it
+asks for confirmation before reinstalling, and preserves `secrets/.env` and
+`notes/notes.md` either way.
 
-## Problem points to understand before deploying
+## After install
 
-- **Headless auth is the main friction point.** Claude Code's normal login is
-  a browser OAuth flow. `setup-token` sidesteps it, but you generate the token
-  *elsewhere* (a machine with a browser) and copy it in — the deploy script
-  cannot obtain it for you.
+`/login` and Telegram pairing need one interactive run before the service
+can take over unattended:
 
-- **The process must stay alive continuously**, unlike a one-off CLI run. This
-  script installs a `systemd` service with `Restart=always` for that reason.
-  If you only run `claude --channels ...` by hand in a terminal, Telegram
-  messages stop being received the moment you close the SSH session.
+```bash
+sudo -u <ASSISTANT_USER> ~/assistant-workspace/start-claude.sh
+```
 
-- **First-message pairing is a deliberate security gate**, not a bug: the
-  Telegram plugin won't respond to a chat_id it doesn't know until you approve
-  the pairing (via `/telegram:access` inside a session, run once). This
-  prevents a stranger who finds your bot's @username from talking to your
-  assistant. Budget for this manual step after first boot.
+Inside that session:
+1. `/login` — first time only, normal browser OAuth flow (or paste an API
+   key / setup-token into `secrets/.env`, see "Headless auth" below, and
+   skip `/login`).
+2. Message your bot on Telegram once. It won't respond yet — first messages
+   from an unknown chat are held for pairing approval by design.
+3. Run `/telegram:access` and approve your own chat_id.
 
-- **WebSearch may be geo-restricted.** Claude Code's built-in web search tool
-  is documented as US-only in some deployments. If your Ubuntu server's egress
-  IP is outside the US, web search may silently not work — worth testing
-  right after deploy, not assuming it'll just work because it does on your
-  Windows machine.
+Then `Ctrl+C` out and hand off to the supervised service:
 
-- **faster-whisper on a small VPS can be slow.** The `small` model is fine on
-  modest CPUs; `medium` is noticeably heavier without a GPU. Size the server
-  (or pick the model) accordingly — a 1-2 vCPU box transcribing with `medium`
-  can take much longer than the voice clip itself.
+```bash
+sudo systemctl start claude-assistant
+sudo systemctl status claude-assistant
+```
 
-- **Yandex.Disk: two options, pick one:**
-  - *REST API + OAuth token* (what `.env`'s `YANDEX_DISK_TOKEN` is for): the
-    script writes a small helper (`scripts/yandex_sync.sh`) that pushes/pulls
-    a specific folder via HTTP calls. No daemon, no interactive step at deploy
-    time, but it's sync-on-trigger (cron or on-demand), not instant/continuous.
-  - *Official `yandex-disk` Linux daemon*: true continuous background sync of
-    one folder, closer to what you'd get on Windows/Mac — but its `yandex-disk
-    setup` command requires a one-time interactive device-code step (open a
-    URL, type a code shown in the terminal). Not scriptable, but only needed
-    once. See `scripts/yandex_disk_daemon_setup.md` if you'd rather use this.
-
-- **Credentials sit in a plaintext `.env` on the server.** The script chmods
-  it `600`, but you're still trusting that box. Treat the bot token, the
-  Claude token, and the Yandex token as secrets — rotate/revoke from
-  Anthropic's and Yandex's account settings if the server is ever compromised.
-
-- **Subscription usage limits.** A Pro/Max token shares the same usage pool as
-  your interactive Claude Code sessions elsewhere. Heavy assistant traffic
-  through the bot competes with your own usage on other machines.
+`start-claude.sh` uses `--continue`, so the service picks up the same
+conversation you were just in, and keeps resuming it across restarts.
 
 ## Layout this repo ships
 
 ```
-deploy.sh                          — main setup script (see below)
-.env.example                       — copy to .env, fill in tokens
-claude-assistant.service.template  — systemd unit installed by deploy.sh
-workspace/
-  CLAUDE.md                        — persistent instructions for the assistant
-  startup-instructions.md          — heartbeat / session-start behavior
-  notes/notes.md                   — freeform notes file
-scripts/
-  yandex_sync.sh                   — push/pull a folder via Yandex.Disk REST API
-  yandex_disk_daemon_setup.md      — notes for the alternative daemon route
+install.sh                    — the one-command installer (see above)
+workspace/                    — template copied to ~/assistant-workspace
+  CLAUDE.md                   — persistent instructions for the assistant
+  startup-instructions.md     — heartbeat / session-start behavior
+  start-claude.sh             — launches claude-cli (--continue --rc, Telegram channel)
+  notes/notes.md              — freeform notes file (empty)
+  secrets/.env.example        — token template; install.sh copies it to .env
+  telegram-artifacts/         — downloaded Telegram attachments/voice land here
+  shared-files/                — synced with Yandex.Disk
+  tools/
+    faster-whisper/
+      transcribe.sh            — transcribe an audio file (wraps transcribe.py)
+      models/                  — downloaded whisper models
+    yandex-disk/
+      sync.sh                  — push/pull shared-files/ via Yandex.Disk REST API
+      cron-setup.sh             — installs the periodic sync cron job
 ```
 
-## Running it
+`install.sh` additionally writes `/etc/systemd/system/claude-assistant.service`
+(`User=<ASSISTANT_USER>`, `ExecStart=<workspace>/start-claude.sh`,
+`Restart=always`) — not shipped as a file in this repo since it's generated
+inline with the actual paths/user filled in.
+
+## Problem points to understand before deploying
+
+- **Headless auth is the main friction point.** Claude Code's normal login is
+  a browser OAuth flow. If you're on a Pro/Max plan and this server has no
+  browser, run `claude setup-token` on a machine where you're already logged
+  in, then paste the resulting token into `~/assistant-workspace/secrets/.env`
+  as `CLAUDE_CODE_OAUTH_TOKEN` (or `ANTHROPIC_API_KEY` for Console billing)
+  before the first `start-claude.sh` run — or just do the browser flow if the
+  server has one. install.sh does not attempt to automate this step.
+
+- **First-message pairing is a deliberate security gate**, not a bug: the
+  Telegram plugin won't respond to a chat_id it doesn't know until you
+  approve the pairing (`/telegram:access`, run once inside a session). This
+  prevents a stranger who finds your bot's @username from talking to your
+  assistant.
+
+- **WebSearch may be geo-restricted.** Claude Code's built-in web search tool
+  is documented as US-only in some deployments. If your server's egress IP is
+  outside the US, web search may silently not work.
+
+- **faster-whisper on a small VPS can be slow.** `small` (the default here)
+  is fine on modest CPUs; `medium` is noticeably heavier without a GPU.
+
+- **Yandex.Disk sync is not continuous.** `shared-files/` syncs on a cron
+  timer (`tools/yandex-disk/cron-setup.sh` installs it, default every 15
+  minutes) and on-demand when the assistant calls `sync.sh` itself — not the
+  instant, always-on sync you'd get from the official `yandex-disk` Linux
+  daemon. That daemon exists but needs a one-time interactive device-code
+  step (open a URL, type a code) that can't be scripted, so it's out of scope
+  here. Don't assume a file just dropped on Yandex.Disk is present locally
+  (or vice versa) without a sync first.
+
+- **Credentials sit in plaintext `secrets/.env` on the server.** install.sh
+  chmods it `600`, but you're still trusting that box. Treat the bot token,
+  the Claude token, and the Yandex token as secrets — rotate/revoke from
+  Anthropic's and Yandex's account settings if the server is ever
+  compromised.
+
+- **Subscription usage limits.** A Pro/Max token shares the same usage pool
+  as your interactive Claude Code sessions elsewhere. Heavy assistant traffic
+  through the bot competes with your own usage on other machines.
+
+## Useful systemd commands
 
 ```bash
-git clone <this repo> ai-assistant-template
-cd ai-assistant-template
-cp .env.example .env
-$EDITOR .env   # fill in TELEGRAM_BOT_TOKEN, CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY, YANDEX_DISK_TOKEN
-sudo ./deploy.sh
+sudo systemctl status claude-assistant    # is it running?
+sudo journalctl -u claude-assistant -f    # follow logs
+sudo systemctl restart claude-assistant   # restart (resumes via --continue)
+sudo systemctl stop claude-assistant      # stop, e.g. to run start-claude.sh by hand
 ```
-
-The script installs dependencies, installs Claude Code + the Telegram plugin,
-lays out the workspace, and installs+starts a systemd service. Watch its
-output — it pauses and prints instructions for the one manual step (approving
-your own Telegram pairing) it cannot do for you.
