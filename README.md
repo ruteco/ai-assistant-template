@@ -17,7 +17,7 @@ yourself, no service manager.
 SSH into the Ubuntu server, then paste this one line:
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/jokerosky/ai-assistant-template/main/install.sh)"
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/ruteco/ai-assistant-template/main/install.sh)"
 ```
 
 It installs dependencies, lays out `~/assistant-workspace`, pre-downloads the

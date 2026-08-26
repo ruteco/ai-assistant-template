@@ -2,7 +2,7 @@
 # One-command installer for a Telegram-backed Claude Code assistant on
 # Ubuntu. Copy-paste into an SSH session on the target server:
 #
-#   bash -c "$(curl -fsSL https://raw.githubusercontent.com/jokerosky/ai-assistant-template/main/install.sh)"
+#   bash -c "$(curl -fsSL https://raw.githubusercontent.com/ruteco/ai-assistant-template/main/install.sh)"
 #
 # (bash -c "$(curl ...)" — not "curl | bash" — so token prompts below can
 # actually read from your terminal.)
@@ -15,7 +15,7 @@
 
 set -euo pipefail
 
-REPO="jokerosky/ai-assistant-template"
+REPO="ruteco/ai-assistant-template"
 BRANCH="main"
 WORKSPACE_DIR="${WORKSPACE_DIR:-$HOME/assistant-workspace}"
 MARKER_FILE="${WORKSPACE_DIR}/.initialized"
