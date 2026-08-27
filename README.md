@@ -37,7 +37,7 @@ asks for confirmation before reinstalling, and preserves `secrets/.env` and
 
 ```bash
 tmux new -s assistant
-cd ~/assistant-workspace && ./start-claude.sh
+cd ~/assistant-workspace && ./start-agent.sh
 ```
 
 Then, inside the Claude Code session:
@@ -49,7 +49,7 @@ Then, inside the Claude Code session:
 
 Detach any time with `Ctrl+b d` — the tmux session (and claude-cli) keeps
 running after you close SSH. Reattach later with `tmux attach -t assistant`.
-`start-claude.sh` uses `--continue`, so reattaching and rerunning it resumes
+`start-agent.sh` uses `--continue`, so reattaching and rerunning it resumes
 your last conversation instead of starting over.
 
 ## Layout this repo ships
@@ -57,9 +57,10 @@ your last conversation instead of starting over.
 ```
 install.sh                    — the one-command installer (see above)
 workspace/                    — template copied to ~/assistant-workspace
-  CLAUDE.md                   — persistent instructions for the assistant
+  AGENTS.md                   — persistent instructions for the assistant
+  CLAUDE.md                   — fallback stub pointing Claude Code at AGENTS.md
   startup-instructions.md     — heartbeat / session-start behavior
-  start-claude.sh             — launches claude-cli (--continue --rc, Telegram channel)
+  start-agent.sh              — launches claude-cli (--continue --rc, Telegram channel)
   notes/notes.md              — freeform notes file (empty)
   secrets/.env.example        — token template; install.sh copies it to .env
   telegram-artifacts/         — downloaded Telegram attachments/voice land here
@@ -86,7 +87,7 @@ workspace/                    — template copied to ~/assistant-workspace
 - **No auto-restart on crash or reboot.** This is the trade-off for
   simplicity vs. the `as-service` branch. tmux survives an SSH disconnect,
   nothing more — if the server reboots or claude-cli crashes, you SSH back in
-  and rerun `start-claude.sh` yourself (it resumes via `--continue`). Want
+  and rerun `start-agent.sh` yourself (it resumes via `--continue`). Want
   Restart=always instead? Use the `as-service` branch.
 
 - **First-message pairing is a deliberate security gate**, not a bug: the

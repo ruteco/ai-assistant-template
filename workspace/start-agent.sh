@@ -3,7 +3,7 @@
 # survives SSH disconnects — this script does not start tmux for you.
 #
 #   tmux new -s assistant
-#   ./start-claude.sh
+#   ./start-agent.sh
 #
 # --continue resumes the most recent session (starts fresh if there is none).
 # --rc makes the session visible/controllable from claude.ai/code and the

@@ -27,7 +27,7 @@ fi
 
 if [[ -f "$MARKER_FILE" ]]; then
   echo "assistant-workspace already looks initialized (${MARKER_FILE} exists)."
-  read -rp "Reinstall everything? Overwrites CLAUDE.md/startup-instructions.md/tools/, keeps secrets/.env and notes/notes.md as-is. [y/N] " CONFIRM < /dev/tty
+  read -rp "Reinstall everything? Overwrites AGENTS.md/CLAUDE.md/startup-instructions.md/tools/, keeps secrets/.env and notes/notes.md as-is. [y/N] " CONFIRM < /dev/tty
   if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
     echo "Aborted. Nothing changed."
     exit 0
@@ -74,7 +74,7 @@ if [[ -n "$NOTES_BACKUP" ]]; then
   cp "$NOTES_BACKUP" "${WORKSPACE_DIR}/notes/notes.md"
 fi
 
-chmod +x "$WORKSPACE_DIR"/start-claude.sh "$WORKSPACE_DIR"/tools/*/*.sh
+chmod +x "$WORKSPACE_DIR"/start-agent.sh "$WORKSPACE_DIR"/tools/*/*.sh
 
 if [[ ! -f "${WORKSPACE_DIR}/secrets/.env" ]]; then
   cp "${WORKSPACE_DIR}/secrets/.env.example" "${WORKSPACE_DIR}/secrets/.env"
@@ -128,7 +128,7 @@ cat <<MSG
 Install done. Manual steps left (this script does none of them):
 
   1. tmux new -s assistant
-  2. cd ${WORKSPACE_DIR} && ./start-claude.sh
+  2. cd ${WORKSPACE_DIR} && ./start-agent.sh
   3. Inside Claude Code: /login   (first time only)
   4. Message your bot on Telegram once, then inside the session run
      /telegram:access
