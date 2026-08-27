@@ -29,7 +29,7 @@ MARKER_FILE="${WORKSPACE_DIR}/.initialized"
 
 if [[ -f "$MARKER_FILE" ]]; then
   echo "assistant-workspace already looks initialized (${MARKER_FILE} exists)."
-  read -rp "Reinstall everything? Overwrites CLAUDE.md/startup-instructions.md/tools/, keeps secrets/.env and notes/notes.md, restarts the service. [y/N] " CONFIRM < /dev/tty
+  read -rp "Reinstall everything? Overwrites AGENTS.md/CLAUDE.md/startup-instructions.md/tools/, keeps secrets/.env and notes/notes.md, restarts the service. [y/N] " CONFIRM < /dev/tty
   if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
     echo "Aborted. Nothing changed."
     exit 0
@@ -77,7 +77,7 @@ if [[ -n "$NOTES_BACKUP" ]]; then
   cp "$NOTES_BACKUP" "${WORKSPACE_DIR}/notes/notes.md"
 fi
 
-chmod +x "$WORKSPACE_DIR"/start-claude.sh "$WORKSPACE_DIR"/tools/*/*.sh
+chmod +x "$WORKSPACE_DIR"/start-agent.sh "$WORKSPACE_DIR"/tools/*/*.sh
 
 if [[ ! -f "${WORKSPACE_DIR}/secrets/.env" ]]; then
   cp "${WORKSPACE_DIR}/secrets/.env.example" "${WORKSPACE_DIR}/secrets/.env"
@@ -137,7 +137,7 @@ Wants=network-online.target
 Type=simple
 User=${ASSISTANT_USER}
 WorkingDirectory=${WORKSPACE_DIR}
-ExecStart=${WORKSPACE_DIR}/start-claude.sh
+ExecStart=${WORKSPACE_DIR}/start-agent.sh
 Restart=always
 RestartSec=5
 
@@ -157,7 +157,7 @@ cat <<MSG
 Install done. The claude-assistant service is enabled but NOT started
 yet — /login and Telegram pairing need one interactive run first:
 
-  sudo -u ${ASSISTANT_USER} ${WORKSPACE_DIR}/start-claude.sh
+  sudo -u ${ASSISTANT_USER} ${WORKSPACE_DIR}/start-agent.sh
   (inside: /login, then message your bot once and run /telegram:access)
 
 Ctrl+C out once that's done, then hand off to the supervised service:

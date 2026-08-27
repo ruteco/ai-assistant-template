@@ -41,7 +41,7 @@ asks for confirmation before reinstalling, and preserves `secrets/.env` and
 can take over unattended:
 
 ```bash
-sudo -u <ASSISTANT_USER> ~/assistant-workspace/start-claude.sh
+sudo -u <ASSISTANT_USER> ~/assistant-workspace/start-agent.sh
 ```
 
 Inside that session:
@@ -59,7 +59,7 @@ sudo systemctl start claude-assistant
 sudo systemctl status claude-assistant
 ```
 
-`start-claude.sh` uses `--continue`, so the service picks up the same
+`start-agent.sh` uses `--continue`, so the service picks up the same
 conversation you were just in, and keeps resuming it across restarts.
 
 ## Layout this repo ships
@@ -67,9 +67,10 @@ conversation you were just in, and keeps resuming it across restarts.
 ```
 install.sh                    — the one-command installer (see above)
 workspace/                    — template copied to ~/assistant-workspace
-  CLAUDE.md                   — persistent instructions for the assistant
+  AGENTS.md                   — persistent instructions for the assistant
+  CLAUDE.md                   — fallback stub pointing Claude Code at AGENTS.md
   startup-instructions.md     — heartbeat / session-start behavior
-  start-claude.sh             — launches claude-cli (--continue --rc, Telegram channel)
+  start-agent.sh              — launches claude-cli (--continue --rc, Telegram channel)
   notes/notes.md              — freeform notes file (empty)
   secrets/.env.example        — token template; install.sh copies it to .env
   telegram-artifacts/         — downloaded Telegram attachments/voice land here
@@ -84,7 +85,7 @@ workspace/                    — template copied to ~/assistant-workspace
 ```
 
 `install.sh` additionally writes `/etc/systemd/system/claude-assistant.service`
-(`User=<ASSISTANT_USER>`, `ExecStart=<workspace>/start-claude.sh`,
+(`User=<ASSISTANT_USER>`, `ExecStart=<workspace>/start-agent.sh`,
 `Restart=always`) — not shipped as a file in this repo since it's generated
 inline with the actual paths/user filled in.
 
@@ -95,7 +96,7 @@ inline with the actual paths/user filled in.
   browser, run `claude setup-token` on a machine where you're already logged
   in, then paste the resulting token into `~/assistant-workspace/secrets/.env`
   as `CLAUDE_CODE_OAUTH_TOKEN` (or `ANTHROPIC_API_KEY` for Console billing)
-  before the first `start-claude.sh` run — or just do the browser flow if the
+  before the first `start-agent.sh` run — or just do the browser flow if the
   server has one. install.sh does not attempt to automate this step.
 
 - **First-message pairing is a deliberate security gate**, not a bug: the
@@ -136,5 +137,5 @@ inline with the actual paths/user filled in.
 sudo systemctl status claude-assistant    # is it running?
 sudo journalctl -u claude-assistant -f    # follow logs
 sudo systemctl restart claude-assistant   # restart (resumes via --continue)
-sudo systemctl stop claude-assistant      # stop, e.g. to run start-claude.sh by hand
+sudo systemctl stop claude-assistant      # stop, e.g. to run start-agent.sh by hand
 ```
