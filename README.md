@@ -72,6 +72,9 @@ workspace/                    — template copied to ~/assistant-workspace
     yandex-disk/
       sync.sh                  — push/pull shared-files/ via Yandex.Disk REST API
       cron-setup.sh             — installs the periodic sync cron job
+    google-calendar/
+      auth.sh                  — one-time OAuth device-flow authorization
+      calendar.sh              — list/create/delete events (token cached 45 min)
 ```
 
 ## Problem points to understand before deploying
