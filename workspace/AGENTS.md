@@ -35,9 +35,18 @@ Freeform notes live in `notes/notes.md`. Read/update it when asked about
 NOT continuous — don't assume a file just dropped on Yandex.Disk is present
 locally (or vice versa) without syncing first.
 
+## Google Calendar
+`tools/google-calendar/calendar.sh {list|create|delete}` reads/writes the
+primary Google Calendar. Requires `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
+and `GOOGLE_CALENDAR_REFRESH_TOKEN` in `secrets/.env` — if the refresh token
+is missing, tell the user to run `tools/google-calendar/auth.sh` (one-time
+device-flow authorization: it prints a URL + code to open on any browser).
+The access token is cached in `tools/google-calendar/.token-cache.json` for
+45 minutes; don't touch that file directly.
+
 ## Secrets
-`secrets/.env` holds tokens (Telegram, Yandex.Disk). Never print its
-contents or commit it anywhere.
+`secrets/.env` holds tokens (Telegram, Yandex.Disk, Google Calendar). Never
+print its contents or commit it anywhere.
 
 ## Heartbeat
 See `startup-instructions.md`, loaded via the SessionStart hook.

@@ -7,3 +7,4 @@ workspace/telegram-artifacts/*
 !workspace/telegram-artifacts/.gitkeep
 workspace/shared-files/*
 !workspace/shared-files/.gitkeep
+workspace/tools/google-calendar/.token-cache.json
